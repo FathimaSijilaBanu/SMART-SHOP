@@ -1,0 +1,100 @@
+<mxfile host="app.diagrams.net" modified="2025-01-23T20:06:58.000Z" agent="5.0" etag="ghi789" version="24.7.17" type="device">
+  <diagram name="Level 2 - Order Management" id="order_mgmt">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- External Entities -->
+        <mxCell id="customer" value="Customer" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="150" width="80" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="admin" value="Admin" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="600" y="150" width="80" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Order Management Processes -->
+        <mxCell id="place_order" value="Place Order" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="250" width="100" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="generate_invoice" value="Generate Invoice" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="250" width="100" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="manage_products" value="Manage Products" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="400" width="100" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="track_order" value="Track Order" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="200" y="400" width="100" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Data Stores -->
+        <mxCell id="order_database" value="Order Database" style="shape=partialRectangle;whiteSpace=wrap;html=1;left=0;right=0;" vertex="1" parent="1">
+          <mxGeometry x="350" y="350" width="120" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="product_database" value="Product Database" style="shape=partialRectangle;whiteSpace=wrap;html=1;left=0;right=0;" vertex="1" parent="1">
+          <mxGeometry x="350" y="500" width="120" height="20" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="invoice_database" value="Invoice Database" style="shape=partialRectangle;whiteSpace=wrap;html=1;left=0;right=0;" vertex="1" parent="1">
+          <mxGeometry x="550" y="300" width="120" height="20" as="geometry" />
+        </mxCell>
+        
+        <!-- Data Flows -->
+        <mxCell id="flow1" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="customer" target="place_order">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="140" y="190" as="sourcePoint" />
+            <mxPoint x="250" y="250" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow2" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="admin" target="manage_products">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="640" y="190" as="sourcePoint" />
+            <mxPoint x="550" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow3" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="place_order" target="generate_invoice">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="300" y="280" as="sourcePoint" />
+            <mxPoint x="400" y="280" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow4" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="place_order" target="order_database">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="250" y="310" as="sourcePoint" />
+            <mxPoint x="350" y="350" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow5" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="generate_invoice" target="invoice_database">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="500" y="280" as="sourcePoint" />
+            <mxPoint x="550" y="310" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow6" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="manage_products" target="product_database">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="500" y="460" as="sourcePoint" />
+            <mxPoint x="470" y="500" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow7" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="order_database" target="track_order">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="350" y="370" as="sourcePoint" />
+            <mxPoint x="250" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

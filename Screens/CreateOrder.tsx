@@ -9,10 +9,11 @@ import {
   Alert,
   Modal,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, Product, OrderItem, Order } from '../types';
-import DataService from '../services/DataService';
+import { RootStackParamList, OrderItem } from '../types';
+import ApiService, { Product } from '../services/ApiService';
 
 type CreateOrderNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreateOrder'>;
 
@@ -36,6 +37,8 @@ const CreateOrder = ({ navigation, route }: CreateOrderProps) => {
   const [showProductModal, setShowProductModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<'unpaid' | 'paid' | 'partial'>('unpaid');
 
   useEffect(() => {
     loadProducts();
@@ -47,11 +50,12 @@ const CreateOrder = ({ navigation, route }: CreateOrderProps) => {
 
   const loadProducts = async () => {
     try {
-      const productsData = await DataService.getProducts();
+      const productsData = await ApiService.getProducts();
       setProducts(productsData);
       setFilteredProducts(productsData);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to load products');
+    } catch (error: any) {
+      console.error('Load products error:', error);
+      Alert.alert('Error', error.message || 'Failed to load products');
     }
   };
 
@@ -71,20 +75,22 @@ const CreateOrder = ({ navigation, route }: CreateOrderProps) => {
   };
 
   const addProductToOrder = (product: Product, quantity: number = 1) => {
-    const existingItemIndex = orderItems.findIndex(item => item.productId === product.id);
+    const productIdStr = product.id.toString();
+    const existingItemIndex = orderItems.findIndex(item => item.productId === productIdStr);
+    const price = parseFloat(product.price);
     
     if (existingItemIndex >= 0) {
       const updatedItems = [...orderItems];
       updatedItems[existingItemIndex].quantity += quantity;
-      updatedItems[existingItemIndex].totalPrice = updatedItems[existingItemIndex].quantity * product.price;
+      updatedItems[existingItemIndex].totalPrice = updatedItems[existingItemIndex].quantity * updatedItems[existingItemIndex].price;
       setOrderItems(updatedItems);
     } else {
       const newItem: OrderItem = {
-        productId: product.id,
+        productId: productIdStr,
         productName: product.name,
         quantity,
-        price: product.price,
-        totalPrice: product.price * quantity,
+        price,
+        totalPrice: price * quantity,
       };
       setOrderItems([...orderItems, newItem]);
     }
@@ -124,35 +130,31 @@ const CreateOrder = ({ navigation, route }: CreateOrderProps) => {
       return;
     }
 
+    // Get shopkeeper ID from first product
+    const firstProduct = products.find(p => p.id.toString() === orderItems[0].productId);
+    if (!firstProduct) {
+      Alert.alert('Error', 'Product information not found');
+      return;
+    }
+
+    setLoading(true);
+
     try {
-      const newOrder: Omit<Order, 'id' | 'orderDate'> = {
-        customerId: userId,
-        customerName: userName,
-        shopkeeperId: '2', // Mock shopkeeper ID
-        items: orderItems,
-        totalAmount: calculateTotal(),
-        status: 'pending',
-        paymentStatus: 'unpaid',
-        notes: notes.trim() || undefined,
+      // Prepare order data for backend
+      const orderData = {
+        shopkeeper: firstProduct.shopkeeper,
+        items: orderItems.map(item => ({
+          product: parseInt(item.productId, 10),
+          quantity: item.quantity,
+        })),
+        payment_status: paymentStatus,
       };
 
-      const createdOrder = await DataService.createOrder(newOrder);
+      const createdOrder = await ApiService.createOrder(orderData);
       
-      // Create credit record for unpaid order
-      await DataService.createCreditRecord({
-        customerId: userId,
-        customerName: userName,
-        shopkeeperId: '2',
-        totalAmount: createdOrder.totalAmount,
-        paidAmount: 0,
-        remainingAmount: createdOrder.totalAmount,
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        status: 'pending',
-      });
-
       Alert.alert(
-        'Order Placed',
-        'Your order has been placed successfully and added to your credit record.',
+        'Order Placed Successfully!',
+        `Your order has been placed. Order ID: ${createdOrder.id}\nTotal: ₹${parseFloat(createdOrder.total_amount).toFixed(2)}`,
         [
           {
             text: 'OK',
@@ -160,12 +162,18 @@ const CreateOrder = ({ navigation, route }: CreateOrderProps) => {
           },
         ]
       );
-    } catch (error) {
-      Alert.alert('Error', 'Failed to place order');
+    } catch (error: any) {
+      console.error('Submit order error:', error);
+      Alert.alert('Error', error.message || 'Failed to place order. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const formatCurrency = (amount: number) => `₹${amount.toFixed(2)}`;
+  const formatCurrency = (amount: number | string) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return `₹${numAmount.toFixed(2)}`;
+  };
 
   return (
     <View style={styles.container}>
@@ -259,9 +267,23 @@ const CreateOrder = ({ navigation, route }: CreateOrderProps) => {
               <Text style={styles.totalLabel}>Total Amount:</Text>
               <Text style={styles.totalValue}>{formatCurrency(calculateTotal())}</Text>
             </View>
-            <Text style={styles.paymentNote}>
-              * This order will be added to your credit record
-            </Text>
+            <View style={styles.paymentStatusContainer}>
+              <Text style={styles.paymentStatusLabel}>Payment Status:</Text>
+              <View style={styles.paymentStatusButtons}>
+                <TouchableOpacity
+                  style={[styles.paymentStatusButton, paymentStatus === 'paid' && styles.paymentStatusActive]}
+                  onPress={() => setPaymentStatus('paid')}
+                >
+                  <Text style={[styles.paymentStatusText, paymentStatus === 'paid' && styles.paymentStatusTextActive]}>Paid</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.paymentStatusButton, paymentStatus === 'unpaid' && styles.paymentStatusActive]}
+                  onPress={() => setPaymentStatus('unpaid')}
+                >
+                  <Text style={[styles.paymentStatusText, paymentStatus === 'unpaid' && styles.paymentStatusTextActive]}>Credit</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -269,11 +291,15 @@ const CreateOrder = ({ navigation, route }: CreateOrderProps) => {
       {/* Submit Button */}
       <View style={styles.footer}>
         <TouchableOpacity 
-          style={[styles.submitButton, orderItems.length === 0 && styles.disabledButton]}
+          style={[styles.submitButton, (orderItems.length === 0 || loading) && styles.disabledButton]}
           onPress={submitOrder}
-          disabled={orderItems.length === 0}
+          disabled={orderItems.length === 0 || loading}
         >
-          <Text style={styles.submitButtonText}>Place Order</Text>
+          {loading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.submitButtonText}>Place Order</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -303,9 +329,9 @@ const CreateOrder = ({ navigation, route }: CreateOrderProps) => {
           <ScrollView style={styles.productsList}>
             {filteredProducts.map((product) => (
               <View key={product.id} style={styles.productItem}>
-                {product.imageUrl && (
+                {product.image && (
                   <Image 
-                    source={{ uri: product.imageUrl }} 
+                    source={{ uri: product.image }} 
                     style={styles.productImage}
                     resizeMode="cover"
                   />

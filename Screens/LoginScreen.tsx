@@ -10,10 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import DataService from '../services/DataService';
+import AuthService from '../services/AuthService';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -22,10 +23,10 @@ interface LoginScreenProps {
 }
 
 const LoginScreen = ({ navigation }: LoginScreenProps) => {
-  const [userType, setUserType] = useState('customer'); // 'customer' or 'shopkeeper'
+  const [userType, setUserType] = useState<'customer' | 'shopkeeper'>('customer');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -33,31 +34,42 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
       return;
     }
     
+    setLoading(true);
+    
     try {
-      // Authenticate user with DataService
-      const user = await DataService.authenticateUser(email, password, userType as 'customer' | 'shopkeeper');
+      // Authenticate user with AuthService (Django backend)
+      const response = await AuthService.login({ email, password });
       
-      if (user) {
-        Alert.alert('Success', `${userType} login successful!`);
-        
-        // Navigate to appropriate dashboard based on user type
-        if (userType === 'customer') {
-          navigation.replace('CustomerDashboard', {
-            userId: user.id,
-            userName: user.name,
-          });
-        } else {
-          navigation.replace('ShopkeeperDashboard', {
-            userId: user.id,
-            userName: user.name,
-          });
-        }
-      } else {
-        Alert.alert('Error', 'Invalid credentials. Please try again.');
+      // Check if user type matches
+      if (response.user.user_type !== userType) {
+        Alert.alert(
+          'Error', 
+          `This account is registered as a ${response.user.user_type}. Please select the correct user type.`
+        );
+        await AuthService.logout();
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error(error);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      
+      Alert.alert('Success', `Welcome back, ${response.user.name}!`);
+      
+      // Navigate to appropriate dashboard based on user type
+      if (response.user.user_type === 'customer') {
+        navigation.replace('CustomerDashboard', {
+          userId: response.user.id.toString(),
+          userName: response.user.name,
+        });
+      } else {
+        navigation.replace('ShopkeeperDashboard', {
+          userId: response.user.id.toString(),
+          userName: response.user.name,
+        });
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      Alert.alert('Login Failed', error.message || 'Invalid credentials. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -142,8 +154,16 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
             />
           </View>
 
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-            <Text style={styles.loginButtonText}>Login</Text>
+          <TouchableOpacity 
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]} 
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#ffffff" />
+            ) : (
+              <Text style={styles.loginButtonText}>Login</Text>
+            )}
           </TouchableOpacity>
 
           {/* Register Link */}
@@ -295,6 +315,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  loginButtonDisabled: {
+    backgroundColor: '#95a5a6',
+    shadowOpacity: 0.1,
   },
   loginButtonText: {
     color: '#ffffff',

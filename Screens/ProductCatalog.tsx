@@ -10,10 +10,11 @@ import {
   RefreshControl,
   Modal,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, Product } from '../types';
-import DataService from '../services/DataService';
+import { RootStackParamList } from '../types';
+import ApiService, { Product } from '../services/ApiService';
 
 type ProductCatalogNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ProductCatalog'>;
 
@@ -42,16 +43,23 @@ const ProductCatalog = ({ navigation, route }: ProductCatalogProps) => {
 
   const loadData = async () => {
     try {
-      const [productsData, categoriesData] = await Promise.all([
-        DataService.getProducts(userType === 'shopkeeper' ? userId : undefined),
-        DataService.getCategories(),
-      ]);
+      // Fetch products from Django backend
+      const params: any = {};
+      if (userType === 'shopkeeper' && userId) {
+        params.shopkeeper = parseInt(userId);
+      }
+      
+      const productsData = await ApiService.getProducts(params);
+      
+      // Extract unique categories from products
+      const uniqueCategories = [...new Set(productsData.map(p => p.category))];
       
       setProducts(productsData);
       setFilteredProducts(productsData);
-      setCategories(['All', ...categoriesData]);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to load products');
+      setCategories(['All', ...uniqueCategories]);
+    } catch (error: any) {
+      console.error('Load products error:', error);
+      Alert.alert('Error', error.message || 'Failed to load products');
     }
   };
 
@@ -90,14 +98,14 @@ const ProductCatalog = ({ navigation, route }: ProductCatalogProps) => {
     setFilteredProducts(filtered);
   };
 
-  const addToCart = (productId: string) => {
+  const addToCart = (productId: number) => {
     setCart(prev => ({
       ...prev,
       [productId]: (prev[productId] || 0) + 1
     }));
   };
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = (productId: number) => {
     setCart(prev => {
       const newCart = { ...prev };
       if (newCart[productId] > 1) {
@@ -111,8 +119,8 @@ const ProductCatalog = ({ navigation, route }: ProductCatalogProps) => {
 
   const getCartTotal = () => {
     return Object.entries(cart).reduce((total, [productId, quantity]) => {
-      const product = products.find(p => p.id === productId);
-      return total + (product ? product.price * quantity : 0);
+      const product = products.find(p => p.id === parseInt(productId, 10));
+      return total + (product ? parseFloat(product.price) * quantity : 0);
     }, 0);
   };
 
@@ -127,25 +135,32 @@ const ProductCatalog = ({ navigation, route }: ProductCatalogProps) => {
     }
 
     const orderItems = Object.entries(cart).map(([productId, quantity]) => {
-      const product = products.find(p => p.id === productId)!;
+      const product = products.find(p => p.id === parseInt(productId, 10))!;
+      const price = parseFloat(product.price);
       return {
-        productId,
+        productId: product.id.toString(),
         productName: product.name,
         quantity,
-        price: product.price,
-        totalPrice: product.price * quantity,
+        price,
+        totalPrice: price * quantity,
       };
     });
 
     navigation.navigate('CreateOrder', {
-      userId: userId || '1', // Default to customer ID if not provided
-      userName: 'Customer', // Default name if not provided
+      userId: userId || '1',
+      userName: 'Customer',
       prefilledItems: orderItems,
       totalAmount: getCartTotal(),
     });
+
+    setShowCart(false);
+    setCart({});
   };
 
-  const formatCurrency = (amount: number) => `₹${amount.toFixed(2)}`;
+  const formatCurrency = (amount: string | number) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return `₹${numAmount.toFixed(2)}`;
+  };
 
   return (
     <View style={styles.container}>
@@ -210,9 +225,9 @@ const ProductCatalog = ({ navigation, route }: ProductCatalogProps) => {
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
             <View key={product.id} style={styles.productCard}>
-              {product.imageUrl && (
+              {product.image && (
                 <Image 
-                  source={{ uri: product.imageUrl }} 
+                  source={{ uri: product.image }} 
                   style={styles.productImage}
                   resizeMode="cover"
                 />
@@ -281,19 +296,35 @@ const ProductCatalog = ({ navigation, route }: ProductCatalogProps) => {
           
           <ScrollView style={styles.cartItems}>
             {Object.entries(cart).map(([productId, quantity]) => {
-              const product = products.find(p => p.id === productId);
+              const product = products.find(p => p.id === parseInt(productId, 10));
               if (!product) return null;
+              const price = parseFloat(product.price);
               
               return (
                 <View key={productId} style={styles.cartItem}>
                   <View style={styles.cartItemInfo}>
                     <Text style={styles.cartItemName}>{product.name}</Text>
                     <Text style={styles.cartItemPrice}>
-                      {formatCurrency(product.price)} × {quantity}
+                      {formatCurrency(price)} × {quantity}
                     </Text>
                   </View>
+                  <View style={styles.quantityControls}>
+                    <TouchableOpacity 
+                      style={styles.quantityButton}
+                      onPress={() => removeFromCart(product.id)}
+                    >
+                      <Text style={styles.quantityButtonText}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.quantityText}>{quantity}</Text>
+                    <TouchableOpacity 
+                      style={styles.quantityButton}
+                      onPress={() => addToCart(product.id)}
+                    >
+                      <Text style={styles.quantityButtonText}>+</Text>
+                    </TouchableOpacity>
+                  </View>
                   <Text style={styles.cartItemTotal}>
-                    {formatCurrency(product.price * quantity)}
+                    {formatCurrency(price * quantity)}
                   </Text>
                 </View>
               );

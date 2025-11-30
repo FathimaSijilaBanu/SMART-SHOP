@@ -9,10 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import DataService from '../services/DataService';
+import AuthService from '../services/AuthService';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Register'>;
 
@@ -70,31 +71,42 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
 
     setLoading(true);
     try {
-      // Check if email already exists
-      const emailExists = await DataService.checkEmailExists(email);
-      if (emailExists) {
-        Alert.alert('Error', 'An account with this email already exists. Please login instead.');
-        setLoading(false);
-        return;
-      }
-
-      // Register new user
-      const newUser = await DataService.registerUser(name, email, phone, password, userType);
+      // Register new user with Django backend
+      const response = await AuthService.register({
+        email,
+        name,
+        phone,
+        user_type: userType,
+        password,
+        password2: confirmPassword,
+      });
       
-      if (newUser) {
-        Alert.alert(
-          'Registration Successful!',
-          `Welcome to SmartShop, ${newUser.name}! You can now login with your credentials.`,
-          [
-            {
-              text: 'Login Now',
-              onPress: () => navigation.replace('Login'),
+      Alert.alert(
+        'Registration Successful!',
+        `Welcome to SmartShop, ${response.user.name}! Your account has been created.`,
+        [
+          {
+            text: 'Continue',
+            onPress: () => {
+              // Navigate to appropriate dashboard
+              if (response.user.user_type === 'customer') {
+                navigation.replace('CustomerDashboard', {
+                  userId: response.user.id.toString(),
+                  userName: response.user.name,
+                });
+              } else {
+                navigation.replace('ShopkeeperDashboard', {
+                  userId: response.user.id.toString(),
+                  userName: response.user.name,
+                });
+              }
             },
-          ]
-        );
-      }
-    } catch (error) {
-      Alert.alert('Registration Failed', error instanceof Error ? error.message : 'Please try again');
+          },
+        ]
+      );
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      Alert.alert('Registration Failed', error.message || 'Please try again');
     } finally {
       setLoading(false);
     }
@@ -211,9 +223,11 @@ const RegisterScreen = ({ navigation }: RegisterScreenProps) => {
           onPress={handleRegister}
           disabled={loading}
         >
-          <Text style={styles.registerButtonText}>
-            {loading ? 'Creating Account...' : 'Create Account'}
-          </Text>
+          {loading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.registerButtonText}>Create Account</Text>
+          )}
         </TouchableOpacity>
 
         {/* Login Link */}

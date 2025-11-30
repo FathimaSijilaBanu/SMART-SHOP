@@ -1,0 +1,51 @@
+<mxfile host="app.diagrams.net" modified="2025-01-23T20:06:58.000Z" agent="5.0" etag="abc123" version="24.7.17" type="device">
+  <diagram name="Level 0 - Context Diagram" id="context">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- External Entities -->
+        <mxCell id="customer" value="Customer" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="150" y="200" width="80" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="shopkeeper" value="Shopkeeper" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="550" y="200" width="80" height="40" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="payment" value="Payment Gateway" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="350" y="400" width="100" height="40" as="geometry" />
+        </mxCell>
+        
+        <!-- Central System -->
+        <mxCell id="system" value="SmartShop App" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="250" width="120" height="60" as="geometry" />
+        </mxCell>
+        
+        <!-- Data Flows -->
+        <mxCell id="flow1" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="customer" target="system">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="230" y="220" as="sourcePoint" />
+            <mxPoint x="340" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow2" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="shopkeeper" target="system">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="550" y="220" as="sourcePoint" />
+            <mxPoint x="460" y="270" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="flow3" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;" edge="1" parent="1" source="system" target="payment">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="310" as="sourcePoint" />
+            <mxPoint x="400" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
