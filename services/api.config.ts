@@ -1,9 +1,8 @@
 // API Configuration
-// For Android emulator, use 10.0.2.2 instead of localhost
-// For iOS simulator, use localhost
-// For physical device, use your computer's IP address
+// Production backend deployed on Render
 export const API_CONFIG = {
-  BASE_URL: 'http://192.168.20.13:8000/api', // Physical device on local network
+  BASE_URL: 'https://smart-shop-1.onrender.com/api', // Production backend
+  // BASE_URL: 'http://192.168.20.13:8000/api', // Local network (for development)
   // BASE_URL: 'http://10.0.2.2:8000/api', // Android emulator
   // BASE_URL: 'http://localhost:8000/api', // iOS simulator
   TIMEOUT: 30000,
