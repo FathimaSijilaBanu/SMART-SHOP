@@ -104,7 +104,7 @@ Get a new access token using refresh token.
 **GET** `/auth/profile/`
 
 Get current user's profile (requires authentication).
-
+e
 **Response:** `200 OK`
 ```json
 {
