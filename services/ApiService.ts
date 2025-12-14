@@ -146,7 +146,8 @@ class ApiService {
     const query = queryParams.toString();
     const endpoint = query ? `${API_ENDPOINTS.PRODUCTS}?${query}` : API_ENDPOINTS.PRODUCTS;
 
-    return this.makeRequest(endpoint, { method: 'GET' });
+    const response = await this.makeRequest(endpoint, { method: 'GET' });
+    return response.results || [];
   }
 
   async getProduct(id: number): Promise<Product> {
@@ -205,7 +206,9 @@ class ApiService {
   // ==================== ORDER ENDPOINTS ====================
 
   async getOrders(): Promise<Order[]> {
-    return this.makeRequest(API_ENDPOINTS.ORDERS, { method: 'GET' });
+    const response = await this.makeRequest(API_ENDPOINTS.ORDERS, { method: 'GET' });
+    // Handle paginated response like products
+    return response.results || response || [];
   }
 
   async getOrder(id: number): Promise<Order> {
@@ -215,8 +218,8 @@ class ApiService {
   }
 
   async createOrder(data: {
-    shopkeeper: number;
-    items: Array<{ product: number; quantity: number }>;
+    shopkeeper_id: number;
+    items: Array<{ product_id: number; quantity: number }>;
     payment_status: 'unpaid' | 'paid' | 'partial';
   }): Promise<Order> {
     return this.makeRequest(API_ENDPOINTS.ORDERS, {
@@ -253,7 +256,9 @@ class ApiService {
     const query = queryParams.toString();
     const endpoint = query ? `${API_ENDPOINTS.CREDITS}?${query}` : API_ENDPOINTS.CREDITS;
 
-    return this.makeRequest(endpoint, { method: 'GET' });
+    const response = await this.makeRequest(endpoint, { method: 'GET' });
+    // Handle paginated response like products and orders
+    return response.results || response || [];
   }
 
   async getCreditRecord(id: number): Promise<CreditRecord> {

@@ -12,6 +12,7 @@ import ProductCatalog from './Screens/ProductCatalog';
 import CreditRecords from './Screens/CreditRecords';
 import CreateOrder from './Screens/CreateOrder';
 import Reminders from './Screens/Reminders';
+import OrderHistory from './Screens/OrderHistory';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -62,6 +63,11 @@ const App = () => {
         <Stack.Screen
           name="Reminders"
           component={Reminders}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="OrderHistory"
+          component={OrderHistory}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

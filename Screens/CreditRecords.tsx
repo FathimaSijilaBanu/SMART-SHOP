@@ -11,8 +11,8 @@ import {
   TextInput,
 } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, CreditRecord } from '../types';
-import DataService from '../services/DataService';
+import { RootStackParamList } from '../types';
+import ApiService, { CreditRecord } from '../services/ApiService';
 
 type CreditRecordsNavigationProp = NativeStackNavigationProp<RootStackParamList, 'CreditRecords'>;
 
@@ -38,10 +38,13 @@ const CreditRecords = ({ navigation, route }: CreditRecordsProps) => {
 
   const loadCreditRecords = async () => {
     try {
-      const records = await DataService.getCreditRecords(userId, userType);
+      console.log('CreditRecords: Loading for user:', userId, 'type:', userType);
+      const records = await ApiService.getCreditRecords();
+      console.log('CreditRecords: Received', records.length, 'records');
       setCreditRecords(records);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to load credit records');
+    } catch (error: any) {
+      console.error('Load credit records error:', error);
+      Alert.alert('Error', error.message || 'Failed to load credit records');
     }
   };
 
@@ -55,7 +58,10 @@ const CreditRecords = ({ navigation, route }: CreditRecordsProps) => {
     loadCreditRecords();
   }, [userId, userType]);
 
-  const formatCurrency = (amount: number) => `₹${amount.toFixed(2)}`;
+  const formatCurrency = (amount: number | string) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return `₹${numAmount.toFixed(2)}`;
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -78,43 +84,42 @@ const CreditRecords = ({ navigation, route }: CreditRecordsProps) => {
     }
 
     const amount = parseFloat(paymentAmount);
-    if (amount <= 0 || amount > selectedRecord.remainingAmount) {
+    const remainingAmount = parseFloat(selectedRecord.remaining_amount);
+    if (amount <= 0 || amount > remainingAmount) {
       Alert.alert('Error', 'Invalid payment amount');
       return;
     }
 
     try {
-      const updatedRecord = await DataService.updateCreditRecord(selectedRecord.id, {
-        paidAmount: selectedRecord.paidAmount + amount,
-        remainingAmount: selectedRecord.remainingAmount - amount,
-        status: selectedRecord.remainingAmount - amount <= 0 ? 'paid' : 'pending',
-        updatedAt: new Date(),
+      await ApiService.makePayment(selectedRecord.id, {
+        amount: amount,
+        payment_method: 'cash',
+        notes: 'Payment via app',
       });
 
-      if (updatedRecord) {
-        Alert.alert('Success', 'Payment recorded successfully');
-        setShowPaymentModal(false);
-        setSelectedRecord(null);
-        setPaymentAmount('');
-        loadCreditRecords();
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to record payment');
+      Alert.alert('Success', 'Payment recorded successfully');
+      setShowPaymentModal(false);
+      setSelectedRecord(null);
+      setPaymentAmount('');
+      loadCreditRecords();
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      Alert.alert('Error', error.message || 'Failed to record payment');
     }
   };
 
   const sendReminder = (record: CreditRecord) => {
     Alert.alert(
       'Reminder Sent',
-      `Payment reminder sent to ${record.customerName} for ${formatCurrency(record.remainingAmount)}`,
+      `Payment reminder sent to ${record.customer_name} for ${formatCurrency(parseFloat(record.remaining_amount))}`,
       [{ text: 'OK' }]
     );
   };
 
   const getTotalStats = () => {
     const filtered = getFilteredRecords();
-    const totalOutstanding = filtered.reduce((sum, record) => sum + record.remainingAmount, 0);
-    const totalPaid = filtered.reduce((sum, record) => sum + record.paidAmount, 0);
+    const totalOutstanding = filtered.reduce((sum, record) => sum + parseFloat(record.remaining_amount), 0);
+    const totalPaid = filtered.reduce((sum, record) => sum + parseFloat(record.paid_amount), 0);
     return { totalOutstanding, totalPaid, count: filtered.length };
   };
 
@@ -124,8 +129,16 @@ const CreditRecords = ({ navigation, route }: CreditRecordsProps) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Credit Records</Text>
-        <Text style={styles.headerSubtitle}>{userName}</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Credit Records</Text>
+          <Text style={styles.headerSubtitle}>{userName}</Text>
+        </View>
       </View>
 
       {/* Stats */}
@@ -176,9 +189,9 @@ const CreditRecords = ({ navigation, route }: CreditRecordsProps) => {
               <View style={styles.recordHeader}>
                 <View>
                   {userType === 'shopkeeper' && (
-                    <Text style={styles.customerName}>{record.customerName}</Text>
+                    <Text style={styles.customerName}>{record.customer_name}</Text>
                   )}
-                  <Text style={styles.recordAmount}>{formatCurrency(record.remainingAmount)}</Text>
+                  <Text style={styles.recordAmount}>{formatCurrency(record.remaining_amount)}</Text>
                   <Text style={styles.recordLabel}>Remaining</Text>
                 </View>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(record.status) }]}>
@@ -188,16 +201,16 @@ const CreditRecords = ({ navigation, route }: CreditRecordsProps) => {
 
               <View style={styles.recordDetails}>
                 <Text style={styles.detailText}>
-                  Total: {formatCurrency(record.totalAmount)}
+                  Total: {formatCurrency(record.total_amount)}
                 </Text>
                 <Text style={styles.detailText}>
-                  Paid: {formatCurrency(record.paidAmount)}
+                  Paid: {formatCurrency(record.paid_amount)}
                 </Text>
                 <Text style={styles.detailText}>
-                  Due Date: {record.dueDate.toLocaleDateString()}
+                  Due Date: {new Date(record.due_date).toLocaleDateString()}
                 </Text>
                 <Text style={styles.detailText}>
-                  Created: {record.createdAt.toLocaleDateString()}
+                  Created: {new Date(record.created_at).toLocaleDateString()}
                 </Text>
               </View>
 
@@ -251,7 +264,7 @@ const CreditRecords = ({ navigation, route }: CreditRecordsProps) => {
           {selectedRecord && (
             <View style={styles.modalContent}>
               <Text style={styles.paymentInfo}>
-                Outstanding Amount: {formatCurrency(selectedRecord.remainingAmount)}
+                Outstanding Amount: {formatCurrency(selectedRecord.remaining_amount)}
               </Text>
               
               <Text style={styles.inputLabel}>Payment Amount</Text>
@@ -295,6 +308,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#9b59b6',
     padding: 16,
     paddingTop: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  backButtonText: {
+    fontSize: 28,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  headerContent: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 20,

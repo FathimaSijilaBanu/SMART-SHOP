@@ -40,7 +40,7 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
-        email = serializer.validated_data['email']
+        email = serializer.validated_data['email'].lower()  # Normalize email to lowercase
         password = serializer.validated_data['password']
         
         user = authenticate(request, username=email, password=password)

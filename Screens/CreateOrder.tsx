@@ -142,15 +142,33 @@ const CreateOrder = ({ navigation, route }: CreateOrderProps) => {
     try {
       // Prepare order data for backend
       const orderData = {
-        shopkeeper: firstProduct.shopkeeper,
+        shopkeeper_id: firstProduct.shopkeeper,
         items: orderItems.map(item => ({
-          product: parseInt(item.productId, 10),
+          product_id: parseInt(item.productId, 10),
           quantity: item.quantity,
         })),
         payment_status: paymentStatus,
       };
 
       const createdOrder = await ApiService.createOrder(orderData);
+      
+      // Create credit record if payment is not fully paid
+      if (paymentStatus === 'unpaid' || paymentStatus === 'partial') {
+        try {
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 30); // Due in 30 days
+          
+          await ApiService.createCreditRecord({
+            customer: createdOrder.customer,
+            total_amount: parseFloat(createdOrder.total_amount),
+            due_date: dueDate.toISOString().split('T')[0], // Format: YYYY-MM-DD
+          });
+          console.log('Credit record created for order:', createdOrder.id);
+        } catch (creditError: any) {
+          console.error('Failed to create credit record:', creditError);
+          // Don't fail the order if credit record creation fails
+        }
+      }
       
       Alert.alert(
         'Order Placed Successfully!',
@@ -179,8 +197,16 @@ const CreateOrder = ({ navigation, route }: CreateOrderProps) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Create Order</Text>
-        <Text style={styles.headerSubtitle}>{userName}</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Create Order</Text>
+          <Text style={styles.headerSubtitle}>{userName}</Text>
+        </View>
       </View>
 
       <ScrollView style={styles.content}>
@@ -369,6 +395,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#e67e22',
     padding: 16,
     paddingTop: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  backButtonText: {
+    fontSize: 28,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  headerContent: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 20,
@@ -544,6 +584,39 @@ const styles = StyleSheet.create({
     color: '#95a5a6',
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  paymentStatusContainer: {
+    marginTop: 12,
+  },
+  paymentStatusLabel: {
+    fontSize: 14,
+    color: '#2c3e50',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  paymentStatusButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  paymentStatusButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3498db',
+    alignItems: 'center',
+  },
+  paymentStatusActive: {
+    backgroundColor: '#3498db',
+  },
+  paymentStatusText: {
+    fontSize: 14,
+    color: '#3498db',
+    fontWeight: '600',
+  },
+  paymentStatusTextActive: {
+    color: '#ffffff',
   },
   footer: {
     padding: 16,

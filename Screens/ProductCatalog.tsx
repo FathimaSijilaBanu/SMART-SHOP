@@ -43,13 +43,19 @@ const ProductCatalog = ({ navigation, route }: ProductCatalogProps) => {
 
   const loadData = async () => {
     try {
+      console.log('ProductCatalog: Loading products for user:', userId, 'type:', userType);
       // Fetch products from Django backend
+      // Note: Removed shopkeeper filter so all products are visible
+      // Shopkeepers can see all products to place orders with other shopkeepers
       const params: any = {};
-      if (userType === 'shopkeeper' && userId) {
-        params.shopkeeper = parseInt(userId);
-      }
       
+      console.log('ProductCatalog: Fetching with params:', params);
       const productsData = await ApiService.getProducts(params);
+      console.log('ProductCatalog: Received', productsData.length, 'products');
+      
+      if (productsData.length === 0) {
+        console.warn('ProductCatalog: No products returned from API');
+      }
       
       // Extract unique categories from products
       const uniqueCategories = [...new Set(productsData.map(p => p.category))];
@@ -157,6 +163,25 @@ const ProductCatalog = ({ navigation, route }: ProductCatalogProps) => {
     setCart({});
   };
 
+  const getProductImage = (product: Product) => {
+    // Direct image URL mapping for products
+    const imageMap: { [key: string]: string } = {
+      'Bun': 'https://images.unsplash.com/photo-1592811773343-9abf0b1a6920?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?w=400',
+      'Amul Milk  Cheese': 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=400',
+      'Cooking Oil (1L)': 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400',
+      'Eggs (12 pcs)': 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400',
+      'Bananas (1kg)': 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400',
+      'Bread': 'https://images.unsplash.com/photo-1598373182133-52452f7691ef?w=400',
+      'Rice (1kg)': 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400',
+      'Milk (1L)': 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400',
+      'Tomatoes (500g)': 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=400',
+      'Onions (1kg)': 'https://images.unsplash.com/photo-1508747703725-719777637510?w=400',
+    };
+    
+    // Return mapped image or fallback to a generic image
+    return imageMap[product.name] || 'https://images.unsplash.com/photo-1534723452862-4c874018d66d?w=400';
+  };
+
   const formatCurrency = (amount: string | number) => {
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     return `₹${numAmount.toFixed(2)}`;
@@ -166,7 +191,15 @@ const ProductCatalog = ({ navigation, route }: ProductCatalogProps) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Product Catalog</Text>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity 
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Product Catalog</Text>
+        </View>
         {userType === 'customer' && (
           <TouchableOpacity 
             style={styles.cartButton}
@@ -225,13 +258,11 @@ const ProductCatalog = ({ navigation, route }: ProductCatalogProps) => {
         {filteredProducts.length > 0 ? (
           filteredProducts.map((product) => (
             <View key={product.id} style={styles.productCard}>
-              {product.image && (
-                <Image 
-                  source={{ uri: product.image }} 
-                  style={styles.productImage}
-                  resizeMode="cover"
-                />
-              )}
+              <Image 
+                source={{ uri: getProductImage(product) }} 
+                style={styles.productImage}
+                resizeMode="cover"
+              />
               <View style={styles.productInfo}>
                 <Text style={styles.productName}>{product.name}</Text>
                 <Text style={styles.productDescription}>{product.description}</Text>
@@ -361,6 +392,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  backButtonText: {
+    fontSize: 28,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
@@ -446,6 +491,18 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 8,
     marginRight: 12,
+  },
+  productImagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
+    marginRight: 12,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  productEmoji: {
+    fontSize: 40,
   },
   productInfo: {
     flex: 1,

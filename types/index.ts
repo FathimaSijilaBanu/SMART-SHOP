@@ -85,6 +85,6 @@ export type RootStackParamList = {
   CreditRecords: { userId: string; userType: 'customer' | 'shopkeeper'; userName: string };
   CreateOrder: { userId: string; userName: string; prefilledItems?: OrderItem[]; totalAmount?: number };
   Reminders: { userId: string; userType: 'customer' | 'shopkeeper'; userName: string };
-  OrderHistory: undefined;
+  OrderHistory: { userId: string; userType: 'customer' | 'shopkeeper'; userName: string };
   Profile: undefined;
 };

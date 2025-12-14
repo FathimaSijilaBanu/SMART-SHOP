@@ -105,10 +105,16 @@ class AuthService {
   // Register new user
   async register(data: RegisterData): Promise<AuthResponse> {
     try {
+      // Normalize email (trim whitespace and convert to lowercase)
+      const normalizedData = {
+        ...data,
+        email: data.email.trim().toLowerCase(),
+      };
+      
       const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.REGISTER}`, {
         method: 'POST',
         headers: API_CONFIG.HEADERS,
-        body: JSON.stringify(data),
+        body: JSON.stringify(normalizedData),
       });
 
       const responseData = await response.json();
@@ -131,16 +137,29 @@ class AuthService {
   // Login user
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
+      // Normalize email (trim whitespace and convert to lowercase)
+      const normalizedCredentials = {
+        email: credentials.email.trim().toLowerCase(),
+        password: credentials.password,
+      };
+      
+      console.log('Login attempt:', { email: normalizedCredentials.email, url: `${API_CONFIG.BASE_URL}${API_ENDPOINTS.LOGIN}` });
+      
       const response = await fetch(`${API_CONFIG.BASE_URL}${API_ENDPOINTS.LOGIN}`, {
         method: 'POST',
         headers: API_CONFIG.HEADERS,
-        body: JSON.stringify(credentials),
+        body: JSON.stringify(normalizedCredentials),
       });
 
+      console.log('Login response status:', response.status);
+      
       const responseData = await response.json();
+      console.log('Login response data:', JSON.stringify(responseData, null, 2));
 
       if (!response.ok) {
-        throw new Error(this.formatErrorMessage(responseData));
+        const errorMessage = this.formatErrorMessage(responseData);
+        console.error('Login failed:', errorMessage);
+        throw new Error(errorMessage);
       }
 
       // Store tokens and user data

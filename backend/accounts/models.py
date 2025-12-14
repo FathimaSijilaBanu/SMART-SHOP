@@ -10,7 +10,7 @@ class UserManager(BaseUserManager):
         """Create and save a regular user."""
         if not email:
             raise ValueError('The Email field must be set')
-        email = self.normalize_email(email)
+        email = self.normalize_email(email).lower()  # Fully lowercase the email
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)

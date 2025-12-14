@@ -137,8 +137,16 @@ const Reminders = ({ navigation, route }: RemindersProps) => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Payment Reminders</Text>
-        <Text style={styles.headerSubtitle}>{userName}</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Payment Reminders</Text>
+          <Text style={styles.headerSubtitle}>{userName}</Text>
+        </View>
       </View>
 
       {/* Stats */}
@@ -309,6 +317,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#f39c12',
     padding: 16,
     paddingTop: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
+  },
+  backButtonText: {
+    fontSize: 28,
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  headerContent: {
+    flex: 1,
   },
   headerTitle: {
     fontSize: 20,

@@ -102,12 +102,21 @@ const CustomerDashboard = ({ navigation, route }: CustomerDashboardProps) => {
     >
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backButtonText}>←</Text>
+        </TouchableOpacity>
         <View style={styles.headerContent}>
           <View>
             <Text style={styles.welcomeText}>Welcome back,</Text>
             <Text style={styles.nameText}>{userName}!</Text>
           </View>
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={handleLogout}
+          >
             <Text style={styles.logoutButtonText}>Logout</Text>
           </TouchableOpacity>
         </View>
@@ -169,7 +178,11 @@ const CustomerDashboard = ({ navigation, route }: CustomerDashboardProps) => {
           
           <TouchableOpacity 
             style={styles.actionCard}
-            onPress={() => navigation.navigate('OrderHistory')}
+            onPress={() => navigation.navigate('OrderHistory', {
+              userId: userId,
+              userType: 'customer',
+              userName: userName,
+            })}
           >
             <Text style={styles.actionIcon}>📋</Text>
             <Text style={styles.actionText}>Order History</Text>
@@ -238,6 +251,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#3498db',
     padding: 24,
     paddingTop: 60,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  backButton: {
+    marginRight: 12,
+    padding: 4,
+    marginTop: 4,
+  },
+  backButtonText: {
+    fontSize: 28,
+    color: '#ffffff',
+    fontWeight: 'bold',
   },
   welcomeText: {
     fontSize: 16,
@@ -398,6 +423,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   headerContent: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
