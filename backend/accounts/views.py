@@ -32,34 +32,39 @@ class RegisterView(generics.CreateAPIView):
 
 
 class LoginView(APIView):
-    """API view for user login."""
-    
     permission_classes = [permissions.AllowAny]
-    
+
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
-        email = serializer.validated_data['email'].lower()  # Normalize email to lowercase
+
+        email = serializer.validated_data['email'].lower()
         password = serializer.validated_data['password']
-        
-        user = authenticate(request, username=email, password=password)
-        
-        if user is not None:
-            refresh = RefreshToken.for_user(user)
-            
-            return Response({
-                'user': UserSerializer(user).data,
-                'tokens': {
-                    'refresh': str(refresh),
-                    'access': str(refresh.access_token),
-                }
-            })
-        else:
+
+        user = authenticate(request, email=email, password=password)
+
+        if not user:
             return Response(
                 {'error': 'Invalid credentials'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
+
+        if not user.is_active:
+            return Response(
+                {'error': 'Account disabled'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'user': UserSerializer(user).data,
+            'tokens': {
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+            }
+        })
+
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
